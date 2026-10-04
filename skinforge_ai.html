@@ -1,0 +1,1154 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SkinForge AI — Professional Minecraft Skin Creator</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        graphite: {
+                            950: '#090a0f',
+                            900: '#0f1117',
+                            850: '#151821',
+                            800: '#1c202b',
+                            700: '#272c3a',
+                            600: '#3c4355',
+                            500: '#5a637a',
+                        },
+                        accent: {
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Three.js for 3D Preview -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            user-select: none;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f1117;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #272c3a;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #3c4355;
+        }
+        .pixelated {
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+        .glass-panel {
+            background: rgba(21, 24, 33, 0.75);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+    </style>
+</head>
+<body class="bg-graphite-950 text-gray-100 min-h-screen flex flex-col overflow-x-hidden">
+
+    <header class="glass-panel sticky top-0 z-50 px-6 py-3 flex items-center justify-between border-b border-graphite-700">
+        <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center shadow-lg shadow-blue-900/30">
+                <i class="fa-solid fa-cube text-white text-lg"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-lg tracking-tight text-white flex items-center gap-2">
+                    SkinForge AI <span class="text-xs px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400 border border-blue-500/30 font-medium">Pro</span>
+                </h1>
+                <p class="text-xs text-gray-400">Create Minecraft skins with AI</p>
+            </div>
+        </div>
+
+        <!-- Global Action Buttons -->
+        <div class="flex items-center space-x-3">
+            <button onclick="app.newSkin()" class="px-3 py-1.5 text-xs font-medium rounded-lg bg-graphite-800 hover:bg-graphite-700 text-gray-200 border border-graphite-700 transition flex items-center gap-1.5">
+                <i class="fa-solid fa-file-circle-plus"></i> New
+            </button>
+            <label class="px-3 py-1.5 text-xs font-medium rounded-lg bg-graphite-800 hover:bg-graphite-700 text-gray-200 border border-graphite-700 transition flex items-center gap-1.5 cursor-pointer">
+                <i class="fa-solid fa-upload"></i> Import PNG
+                <input type="file" id="importFile" accept="image/png" class="hidden" onchange="app.importSkin(event)">
+            </label>
+            <button onclick="app.downloadSkin()" class="px-3 py-1.5 text-xs font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white shadow-md shadow-blue-600/30 transition flex items-center gap-1.5">
+                <i class="fa-solid fa-download"></i> Download Skin
+            </button>
+            <button onclick="app.openRecentsModal()" class="px-3 py-1.5 text-xs font-medium rounded-lg bg-graphite-800 hover:bg-graphite-700 text-gray-200 border border-graphite-700 transition flex items-center gap-1.5">
+                <i class="fa-solid fa-clock-rotate-left"></i> Recents
+            </button>
+        </div>
+    </header>
+
+    <div class="lg:hidden flex bg-graphite-900 border-b border-graphite-800 px-4 py-2 sticky top-[65px] z-40">
+        <div class="grid grid-cols-4 w-full gap-1 bg-graphite-950 p-1 rounded-xl">
+            <button onclick="app.switchTab('editor')" id="mobTabEditor" class="py-2 text-xs font-medium rounded-lg bg-blue-600 text-white transition flex flex-col items-center gap-1">
+                <i class="fa-solid fa-paintbrush"></i> Editor
+            </button>
+            <button onclick="app.switchTab('preview')" id="mobTabPreview" class="py-2 text-xs font-medium rounded-lg text-gray-400 hover:text-white transition flex flex-col items-center gap-1">
+                <i class="fa-solid fa-cube"></i> Preview
+            </button>
+            <button onclick="app.switchTab('ai')" id="mobTabAi" class="py-2 text-xs font-medium rounded-lg text-gray-400 hover:text-white transition flex flex-col items-center gap-1">
+                <i class="fa-solid fa-wand-magic-sparkles"></i> AI Studio
+            </button>
+            <button onclick="app.switchTab('colors')" id="mobTabColors" class="py-2 text-xs font-medium rounded-lg text-gray-400 hover:text-white transition flex flex-col items-center gap-1">
+                <i class="fa-solid fa-palette"></i> Colors
+            </button>
+        </div>
+    </div>
+
+    <main class="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 p-4 max-w-[1700px] w-full mx-auto">
+        
+        <!-- LEFT COLUMN: Tools & 2D Texture Editor -->
+        <section id="panelEditor" class="lg:col-span-4 flex flex-col gap-4">
+            <!-- Toolbar Card -->
+            <div class="glass-panel p-4 rounded-2xl shadow-xl flex flex-col gap-3">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-xs font-semibold tracking-wider text-gray-400 uppercase">Editor Tools</h2>
+                    <div class="flex items-center space-x-1">
+                        <button onclick="app.undo()" title="Undo (Ctrl+Z)" class="p-2 rounded-lg bg-graphite-800 hover:bg-graphite-700 text-gray-300 transition"><i class="fa-solid fa-rotate-left"></i></button>
+                        <button onclick="app.redo()" title="Redo (Ctrl+Y)" class="p-2 rounded-lg bg-graphite-800 hover:bg-graphite-700 text-gray-300 transition"><i class="fa-solid fa-rotate-right"></i></button>
+                        <button onclick="app.clearCanvas()" title="Clear Skin" class="p-2 rounded-lg bg-graphite-800 hover:bg-red-900/40 text-gray-300 hover:text-red-400 transition"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-6 gap-2">
+                    <button onclick="app.setTool('pencil')" id="toolPencil" class="p-2.5 rounded-xl bg-blue-600 text-white flex items-center justify-center transition shadow-md" title="Pencil"><i class="fa-solid fa-pencil"></i></button>
+                    <button onclick="app.setTool('eraser')" id="toolEraser" class="p-2.5 rounded-xl bg-graphite-800 hover:bg-graphite-700 text-gray-300 flex items-center justify-center transition" title="Eraser"><i class="fa-solid fa-eraser"></i></button>
+                    <button onclick="app.setTool('fill')" id="toolFill" class="p-2.5 rounded-xl bg-graphite-800 hover:bg-graphite-700 text-gray-300 flex items-center justify-center transition" title="Paint Bucket"><i class="fa-solid fa-fill-drip"></i></button>
+                    <button onclick="app.setTool('eyedropper')" id="toolEyedropper" class="p-2.5 rounded-xl bg-graphite-800 hover:bg-graphite-700 text-gray-300 flex items-center justify-center transition" title="Eyedropper"><i class="fa-solid fa-eye-dropper"></i></button>
+                    <button onclick="app.toggleMirror()" id="toolMirror" class="p-2.5 rounded-xl bg-graphite-800 hover:bg-graphite-700 text-gray-300 flex items-center justify-center transition" title="Toggle Mirror Drawing"><i class="fa-solid fa-arrows-split-up-and-left"></i></button>
+                    <button onclick="app.toggleGrid()" id="toolGrid" class="p-2.5 rounded-xl bg-graphite-800 hover:bg-graphite-700 text-blue-400 flex items-center justify-center transition" title="Toggle Grid"><i class="fa-solid fa-border-all"></i></button>
+                </div>
+
+                <div class="flex items-center justify-between text-xs text-gray-400 pt-2 border-t border-graphite-700/50">
+                    <span>Brush Size: <strong id="brushSizeVal" class="text-white">1px</strong></span>
+                    <div class="flex space-x-1">
+                        <button onclick="app.setBrushSize(1)" class="w-6 h-6 rounded bg-graphite-800 hover:bg-graphite-700 text-white font-bold text-[10px]">1</button>
+                        <button onclick="app.setBrushSize(2)" class="w-6 h-6 rounded bg-graphite-800 hover:bg-graphite-700 text-white font-bold text-[10px]">2</button>
+                        <button onclick="app.setBrushSize(3)" class="w-6 h-6 rounded bg-graphite-800 hover:bg-graphite-700 text-white font-bold text-[10px]">3</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2D Texture Canvas Card -->
+            <div class="glass-panel p-4 rounded-2xl shadow-xl flex flex-col items-center flex-1">
+                <div class="w-full flex items-center justify-between mb-3">
+                    <h2 class="text-xs font-semibold tracking-wider text-gray-400 uppercase">Texture UV Canvas (64x64)</h2>
+                    <div class="flex items-center space-x-2">
+                        <button onclick="app.zoomCanvas(0.1)" class="px-2 py-1 bg-graphite-800 rounded hover:bg-graphite-700 text-xs">+</button>
+                        <button onclick="app.resetZoom()" class="text-xs text-gray-400 hover:text-white">Reset</button>
+                        <button onclick="app.zoomCanvas(-0.1)" class="px-2 py-1 bg-graphite-800 rounded hover:bg-graphite-700 text-xs">-</button>
+                    </div>
+                </div>
+
+                <div id="canvasContainer" class="relative overflow-auto max-h-[500px] w-full flex items-center justify-center bg-graphite-950/80 rounded-xl p-4 border border-graphite-800">
+                    <canvas id="skinCanvas" class="pixelated cursor-crosshair shadow-2xl rounded" width="512" height="512"></canvas>
+                </div>
+                <p class="text-[11px] text-gray-500 mt-2 text-center">Standard Minecraft 64x64 skin layout (Steve/Alex compatible)</p>
+            </div>
+        </section>
+
+        <!-- CENTER COLUMN: 3D Preview -->
+        <section id="panelPreview" class="lg:col-span-5 flex flex-col gap-4">
+            <div class="glass-panel p-4 rounded-2xl shadow-xl flex flex-col flex-1 min-h-[500px]">
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="text-xs font-semibold tracking-wider text-gray-400 uppercase">3D Character Preview</h2>
+                    <!-- Camera Angle Selector -->
+                    <div class="flex bg-graphite-900 p-1 rounded-xl border border-graphite-700/60">
+                        <button onclick="app.setCameraAngle('front')" class="px-2.5 py-1 text-xs rounded-lg bg-blue-600 text-white font-medium transition" id="camFront">Front</button>
+                        <button onclick="app.setCameraAngle('back')" class="px-2.5 py-1 text-xs rounded-lg text-gray-400 hover:text-white font-medium transition" id="camBack">Back</button>
+                        <button onclick="app.setCameraAngle('left')" class="px-2.5 py-1 text-xs rounded-lg text-gray-400 hover:text-white font-medium transition" id="camLeft">Left</button>
+                        <button onclick="app.setCameraAngle('right')" class="px-2.5 py-1 text-xs rounded-lg text-gray-400 hover:text-white font-medium transition" id="camRight">Right</button>
+                        <button onclick="app.setCameraAngle('isometric')" class="px-2.5 py-1 text-xs rounded-lg text-gray-400 hover:text-white font-medium transition" id="camIso">3/4</button>
+                    </div>
+                </div>
+
+                <!-- Three.js Canvas Container -->
+                <div id="threeContainer" class="flex-1 w-full bg-gradient-to-b from-graphite-900 to-graphite-950 rounded-xl relative overflow-hidden border border-graphite-800 flex items-center justify-center min-h-[420px]">
+                    <div id="loadingThree" class="absolute inset-0 flex items-center justify-center bg-graphite-900/80 text-gray-400 text-sm">
+                        <i class="fa-solid fa-spinner fa-spin mr-2"></i> Initializing 3D Renderer...
+                    </div>
+                </div>
+
+                <!-- Preview Options -->
+                <div class="flex items-center justify-between mt-3 px-2">
+                    <label class="flex items-center space-x-2 text-xs text-gray-300 cursor-pointer">
+                        <input type="checkbox" id="chkOuterLayer" checked onchange="app.toggleOuterLayer(this.checked)" class="rounded bg-graphite-900 border-graphite-700 text-blue-600 focus:ring-0">
+                        <span>Show Outer Layer (Hat/Jacket)</span>
+                    </label>
+                    <button onclick="app.resetCamera()" class="text-xs text-gray-400 hover:text-white flex items-center gap-1">
+                        <i class="fa-solid fa-arrows-rotate"></i> Reset View
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- RIGHT COLUMN: AI Studio & Colors -->
+        <section id="panelAi" class="lg:col-span-3 flex flex-col gap-4">
+            
+            <!-- Model Selector Card -->
+            <div class="glass-panel p-4 rounded-2xl shadow-xl flex flex-col gap-3">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-xs font-semibold tracking-wider text-gray-400 uppercase flex items-center gap-1.5">
+                        <i class="fa-solid fa-microchip text-blue-400"></i> AI Model
+                    </h2>
+                    <span class="text-[10px] text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20">xKiro Powered</span>
+                </div>
+                
+                <div class="relative">
+                    <select id="modelSelect" onchange="app.changeModel(this.value)" class="w-full bg-graphite-900 border border-graphite-700 rounded-xl px-3 py-2 text-xs text-gray-200 focus:outline-none focus:border-blue-500 transition appearance-none pr-8">
+                        <!-- Populated dynamically -->
+                    </select>
+                    <div class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 text-xs">
+                        <i class="fa-solid fa-chevron-down"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI Studio Panel -->
+            <div class="glass-panel p-4 rounded-2xl shadow-xl flex flex-col gap-3">
+                <h2 class="text-xs font-semibold tracking-wider text-gray-400 uppercase flex items-center gap-1.5">
+                    <i class="fa-solid fa-wand-magic-sparkles text-purple-400"></i> AI Studio
+                </h2>
+
+                <div class="flex flex-col gap-2">
+                    <label class="text-xs text-gray-300 font-medium">Skin Concept / Prompt</label>
+                    <textarea id="aiPrompt" rows="3" placeholder="e.g. medieval knight with dark armor, glowing cyan eyes..." class="w-full bg-graphite-900 border border-graphite-700 rounded-xl p-3 text-xs text-gray-200 focus:outline-none focus:border-blue-500 transition resize-none"></textarea>
+                </div>
+
+                <!-- AI Mode Selector -->
+                <div class="grid grid-cols-3 gap-1.5 bg-graphite-900 p-1 rounded-xl border border-graphite-800">
+                    <button onclick="app.setAiMode('generate')" id="modeGenerate" class="py-1.5 text-xs font-medium rounded-lg bg-blue-600 text-white transition">Generate</button>
+                    <button onclick="app.setAiMode('improve')" id="modeImprove" class="py-1.5 text-xs font-medium rounded-lg text-gray-400 hover:text-white transition">Improve</button>
+                    <button onclick="app.setAiMode('recolor')" id="modeRecolor" class="py-1.5 text-xs font-medium rounded-lg text-gray-400 hover:text-white transition">Recolor</button>
+                </div>
+
+                <button onclick="app.runAiAction()" id="aiSubmitBtn" class="w-full py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-medium text-xs shadow-lg shadow-blue-600/30 transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-sparkles"></i> <span id="aiBtnText">Generate Skin</span>
+                </button>
+            </div>
+
+            <div id="panelColors" class="glass-panel p-4 rounded-2xl shadow-xl flex flex-col gap-3">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-xs font-semibold tracking-wider text-gray-400 uppercase flex items-center gap-1.5">
+                        <i class="fa-solid fa-palette text-pink-400"></i> Color Palette
+                    </h2>
+                    <div class="flex items-center gap-2">
+                        <input type="color" id="colorPickerInput" value="#3b82f6" onchange="app.selectCustomColor(this.value)" class="w-6 h-6 rounded cursor-pointer bg-transparent border-0">
+                        <span id="currentColorHex" class="text-xs font-mono text-gray-300">#3B82F6</span>
+                    </div>
+                </div>
+
+                <!-- Palette Swatches Grid -->
+                <div id="paletteGrid" class="grid grid-cols-8 gap-1.5 max-h-[140px] overflow-y-auto p-1 bg-graphite-900/50 rounded-xl border border-graphite-800">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- Recents Modal -->
+    <div id="recentsModal" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="glass-panel max-w-lg w-full p-6 rounded-2xl shadow-2xl flex flex-col gap-4 border border-graphite-700">
+            <div class="flex items-center justify-between">
+                <h3 class="font-bold text-base text-white flex items-center gap-2">
+                    <i class="fa-solid fa-clock-rotate-left text-blue-400"></i> Recent Skins
+                </h3>
+                <button onclick="app.closeRecentsModal()" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div id="recentsList" class="grid grid-cols-3 gap-3 max-h-[350px] overflow-y-auto p-1">
+                <!-- Dynamically populated -->
+            </div>
+            <div class="flex justify-end pt-2 border-t border-graphite-700">
+                <button onclick="app.closeRecentsModal()" class="px-4 py-2 bg-graphite-800 hover:bg-graphite-700 text-xs font-medium rounded-xl text-white">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toastContainer" class="fixed bottom-6 right-6 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <script>
+        const WORKER_URL = "https://young-sunset-f1ba.capijuniorvara.workers.dev/";
+
+        const MODEL_LIST = [
+            { id: "qwen/qwen3.8-max:free", name: "Qwen 3.8 Max", group: "FREE", free: true },
+            { id: "qwen/qwen3.7-max:free", name: "Qwen 3.7 Max", group: "FREE", free: true },
+            { id: "qwen/qwen3.7-plus:free", name: "Qwen 3.7 Plus", group: "FREE", free: true },
+            { id: "qwen/qwen3.6-max-preview:free", name: "Qwen 3.6 Max Preview", group: "FREE", free: true },
+            { id: "qwen/qwen3.6-plus:free", name: "Qwen 3.6 Plus", group: "FREE", free: true },
+            { id: "qwen/qwen3.5-397b-a17b:free", name: "Qwen 3.5 397B", group: "FREE", free: true },
+            { id: "qwen/qwen3.5-plus:free", name: "Qwen 3.5 Plus", group: "FREE", free: true },
+            { id: "qwen/qwen3.7-flash:free", name: "Qwen 3.7 Flash", group: "FREE", free: true },
+            { id: "qwen/qwen3.6-27b:free", name: "Qwen 3.6 27B", group: "FREE", free: true },
+            { id: "qwen/qwen3.6-35b-a3b:free", name: "Qwen 3.6 35B", group: "FREE", free: true },
+            { id: "qwen/qwen3-coder-plus:free", name: "Qwen 3 Coder Plus", group: "FREE", free: true },
+            { id: "qwen/qwen3.8-omni-flash:free", name: "Qwen 3.8 Omni Flash", group: "FREE", free: true },
+            { id: "qwen/qwen3.5-flash:free", name: "Qwen 3.5 Flash", group: "FREE", free: true },
+            { id: "qwen/qwen3-vl-plus:free", name: "Qwen 3 VL Plus", group: "FREE", free: true },
+            { id: "qwen/qwen-plus-2025-07-28:free", name: "Qwen Plus (Jul 25)", group: "FREE", free: true },
+            { id: "meta/muse-spark-1.3-contributor:free", name: "Muse Spark 1.3", group: "FREE", free: true },
+            { id: "meta/muse-spark-1.2-contributor:free", name: "Muse Spark 1.2", group: "FREE", free: true },
+            { id: "dots-studio/dots-3-note-preview:free", name: "Dots 3 Note Preview", group: "FREE", free: true },
+            { id: "meituan/longcat-2.5-preview:free", name: "LongCat 2.5 Preview", group: "FREE", free: true },
+            { id: "stealth/space-bunny-alpha:free", name: "Space Bunny Alpha", group: "FREE", free: true },
+            { id: "inclusionai/ling-3.0-flash-sante:free", name: "Ling 3.0 Flash Sante", group: "FREE", free: true },
+            { id: "qwen/qwen3.5-omni-plus:free", name: "Qwen 3.5 Omni Plus", group: "FREE", free: true },
+            { id: "qwen/qwen3.5-omni-flash:free", name: "Qwen 3.5 Omni Flash", group: "FREE", free: true },
+            { id: "qwen/qwen3-omni-flash:free", name: "Qwen 3 Omni Flash", group: "FREE", free: true },
+            { id: "apodex/apodex-1.1-mini:free", name: "Apodex 1.1 Mini", group: "FREE", free: true },
+            { id: "liquid/lfm-2.5-2.6b:free", name: "LFM 2.5 2.6B", group: "FREE", free: true },
+            
+            { id: "mistralai/mistral-medium-3.5", name: "Mistral Medium 3.5", group: "OTHER", free: false },
+            { id: "mistralai/mistral-small-2603", name: "Mistral Small 2603", group: "OTHER", free: false },
+            { id: "sensenova/sensenova-6.8-flash-lite", name: "Sensenova 6.8 Flash Lite", group: "OTHER", free: false },
+            { id: "sensenova/sensenova-6.7-flash-lite", name: "Sensenova 6.7 Flash Lite", group: "OTHER", free: false },
+            { id: "cohere/command-a-plus", name: "Cohere Command A+", group: "OTHER", free: false },
+            { id: "cohere/command-a-reasoning", name: "Cohere Command A Reasoning", group: "OTHER", free: false },
+            { id: "meituan/longcat-2.0", name: "LongCat 2.0", group: "OTHER", free: false },
+            { id: "stealth/big-pickle", name: "Big Pickle", group: "OTHER", free: false },
+            { id: "mistralai/devstral-medium", name: "Devstral Medium", group: "OTHER", free: false },
+            { id: "mistralai/codestral-2508", name: "Codestral 2508", group: "OTHER", free: false },
+            { id: "cohere/command-a", name: "Cohere Command A", group: "OTHER", free: false },
+            { id: "cohere/command-a-vision", name: "Cohere Command A Vision", group: "OTHER", free: false },
+            { id: "mistralai/ministral-14b", name: "Ministral 14B", group: "OTHER", free: false },
+            { id: "mistralai/ministral-8b", name: "Ministral 8B", group: "OTHER", free: false },
+            { id: "mistralai/ministral-3b", name: "Ministral 3B", group: "OTHER", free: false },
+            { id: "cohere/command-r-plus-08-2024", name: "Command R+ (08/2024)", group: "OTHER", free: false },
+            { id: "cohere/command-r-08-2024", name: "Command R (08/2024)", group: "OTHER", free: false },
+            { id: "cohere/command-r7b-12-2024", name: "Command R7B (12/2024)", group: "OTHER", free: false },
+            { id: "cohere/aya-expanse-32b", name: "Aya Expanse 32B", group: "OTHER", free: false },
+            { id: "cohere/aya-vision-32b", name: "Aya Vision 32B", group: "OTHER", free: false },
+            { id: "cohere/command-a-translate", name: "Command A Translate", group: "OTHER", free: false },
+            { id: "cohere/north-mini-code", name: "North Mini Code", group: "OTHER", free: false },
+            { id: "cohere/north-small-translate", name: "North Small Translate", group: "OTHER", free: false },
+            { id: "cohere/tiny-aya-global", name: "Tiny Aya Global", group: "OTHER", free: false },
+            { id: "cohere/tiny-aya-fire", name: "Tiny Aya Fire", group: "OTHER", free: false },
+            { id: "cohere/tiny-aya-earth", name: "Tiny Aya Earth", group: "OTHER", free: false },
+            { id: "cohere/tiny-aya-water", name: "Tiny Aya Water", group: "OTHER", free: false }
+        ];
+
+        class SkinForgeApp {
+            constructor() {
+                this.canvas = document.getElementById('skinCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.width = 64;
+                this.height = 64;
+                this.scale = 8;
+                this.zoomLevel = 1;
+                
+                this.currentTool = 'pencil';
+                this.brushSize = 1;
+                this.currentColor = '#3b82f6';
+                this.mirrorEnabled = false;
+                this.gridEnabled = true;
+                this.aiMode = 'generate';
+                
+                this.history = [];
+                this.historyStep = -1;
+                this.maxHistory = 30;
+
+                this.selectedModel = localStorage.getItem('skinforge_model') || 'qwen/qwen3.8-max:free';
+                this.recentSkins = JSON.parse(localStorage.getItem('skinforge_recents') || '[]');
+
+                this.palette = [
+                    '#000000', '#ffffff', '#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#ec4899',
+                    '#1e293b', '#475569', '#cbd5e1', '#94a3b8', '#065f46', '#047857', '#b45309', '#92400e',
+                    '#7f1d1d', '#991b1b', '#581c87', '#6b21a8', '#1e1b4b', '#312e81', '#14532d', '#166534'
+                ];
+
+                this.initApp();
+            }
+
+            initApp() {
+                this.populateModels();
+                this.populatePalette();
+                this.initCanvasSize();
+                this.setupEventListeners();
+                this.initThreeD();
+                this.newSkin(false);
+                this.updateCanvasDisplay();
+            }
+
+            populateModels() {
+                const select = document.getElementById('modelSelect');
+                select.innerHTML = '';
+
+                const freeGroup = document.createElement('optgroup');
+                freeGroup.label = 'FREE MODELS';
+                const otherGroup = document.createElement('optgroup');
+                otherGroup.label = 'OTHER MODELS';
+
+                MODEL_LIST.forEach(m => {
+                    const opt = document.createElement('option');
+                    opt.value = m.id;
+                    opt.textContent = `${m.name}${m.free ? ' [FREE]' : ''}`;
+                    if (m.group === 'FREE') freeGroup.appendChild(opt);
+                    else otherGroup.appendChild(opt);
+                });
+
+                select.appendChild(freeGroup);
+                select.appendChild(otherGroup);
+                select.value = this.selectedModel;
+            }
+
+            populatePalette() {
+                const grid = document.getElementById('paletteGrid');
+                grid.innerHTML = '';
+                this.palette.forEach(color => {
+                    const btn = document.createElement('button');
+                    btn.className = 'w-7 h-7 rounded-lg border border-graphite-700 shadow-sm transition transform hover:scale-110';
+                    btn.style.backgroundColor = color;
+                    btn.onclick = () => this.selectCustomColor(color);
+                    grid.appendChild(btn);
+                });
+                this.updateColorDisplay();
+            }
+
+            selectCustomColor(color) {
+                this.currentColor = color;
+                document.getElementById('colorPickerInput').value = color;
+                this.updateColorDisplay();
+            }
+
+            updateColorDisplay() {
+                document.getElementById('currentColorHex').textContent = this.currentColor.toUpperCase();
+            }
+
+            initCanvasSize() {
+                this.canvas.width = this.width * this.scale;
+                this.canvas.height = this.height * this.scale;
+                this.ctx.imageSmoothingEnabled = false;
+            }
+
+            setupEventListeners() {
+                let isDrawing = false;
+
+                const getCoords = (e) => {
+                    const rect = this.canvas.getBoundingClientRect();
+                    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                    const x = Math.floor((clientX - rect.left) / (this.scale * this.zoomLevel));
+                    const y = Math.floor((clientY - rect.top) / (this.scale * this.zoomLevel));
+                    return { x, y };
+                };
+
+                const startAction = (e) => {
+                    isDrawing = true;
+                    const { x, y } = getCoords(e);
+                    this.handleCanvasInteraction(x, y, true);
+                };
+
+                const moveAction = (e) => {
+                    if (!isDrawing) return;
+                    const { x, y } = getCoords(e);
+                    this.handleCanvasInteraction(x, y, false);
+                };
+
+                const endAction = () => {
+                    if (isDrawing) {
+                        isDrawing = false;
+                        this.saveHistoryState();
+                        this.update3DTexture();
+                    }
+                };
+
+                this.canvas.addEventListener('mousedown', startAction);
+                this.canvas.addEventListener('mousemove', moveAction);
+                window.addEventListener('mouseup', endAction);
+
+                this.canvas.addEventListener('touchstart', (e) => { startAction(e); e.preventDefault(); });
+                this.canvas.addEventListener('touchmove', (e) => { moveAction(e); e.preventDefault(); });
+                this.canvas.addEventListener('touchend', endAction);
+            }
+
+            handleCanvasInteraction(x, y, isNewClick) {
+                if (x < 0 || x >= this.width || y < 0 || y >= this.height) return;
+
+                if (this.currentTool === 'pencil') {
+                    this.drawBrush(x, y, this.currentColor);
+                } else if (this.currentTool === 'eraser') {
+                    this.drawBrush(x, y, 'rgba(0,0,0,0)');
+                } else if (this.currentTool === 'eyedropper' && isNewClick) {
+                    const p = this.ctx.getImageData(x * this.scale, y * this.scale, 1, 1).data;
+                    if (p[3] > 0) {
+                        const hex = '#' + [p[0], p[1], p[2]].map(v => v.toString(16).padStart(2, '0')).join('');
+                        this.selectCustomColor(hex);
+                    }
+                    this.setTool('pencil');
+                } else if (this.currentTool === 'fill' && isNewClick) {
+                    this.floodFill(x, y, this.currentColor);
+                    this.saveHistoryState();
+                    this.update3DTexture();
+                }
+                this.updateCanvasDisplay();
+            }
+
+            drawBrush(cx, cy, color) {
+                const half = Math.floor(this.brushSize / 2);
+                for (let dx = -half; dx <= half; dx++) {
+                    for (let dy = -half; dy <= half; dy++) {
+                        const nx = cx + dx;
+                        const ny = cy + dy;
+                        if (nx >= 0 && nx < this.width && ny >= 0 && ny < this.height) {
+                            if (color === 'rgba(0,0,0,0)') {
+                                this.ctx.clearRect(nx * this.scale, ny * this.scale, this.scale, this.scale);
+                            } else {
+                                this.ctx.fillStyle = color;
+                                this.ctx.fillRect(nx * this.scale, ny * this.scale, this.scale, this.scale);
+                            }
+
+                            if (this.mirrorEnabled) {
+                                const mx = this.width - 1 - nx;
+                                if (mx >= 0 && mx < this.width) {
+                                    if (color === 'rgba(0,0,0,0)') {
+                                        this.ctx.clearRect(mx * this.scale, ny * this.scale, this.scale, this.scale);
+                                    } else {
+                                        this.ctx.fillStyle = color;
+                                        this.ctx.fillRect(mx * this.scale, ny * this.scale, this.scale, this.scale);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                this.updateCanvasDisplay();
+            }
+
+            floodFill(startX, startY, fillColor) {
+                const imgData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
+                const data = imgData.data;
+                const targetIdx = (startY * this.canvas.width + startX) * 4;
+                const tr = data[targetIdx], tg = data[targetIdx+1], tb = data[targetIdx+2], ta = data[targetIdx+3];
+
+                // Parse hex color
+                const tempC = document.createElement('canvas').getContext('2d');
+                tempC.fillStyle = fillColor;
+                tempC.fillRect(0,0,1,1);
+                const fr = tempC.getImageData(0,0,1,1).data[0];
+                const fg = tempC.getImageData(0,0,1,1).data[1];
+                const fb = tempC.getImageData(0,0,1,1).data[2];
+                const fa = 255;
+
+                if (tr === fr && tg === fg && tb === fb && ta === fa) return;
+
+                const queue = [[startX, startY]];
+                const visited = new Uint8Array(this.width * this.height);
+
+                while (queue.length > 0) {
+                    const [x, y] = queue.pop();
+                    if (x < 0 || x >= this.width || y < 0 || y >= this.height) continue;
+                    const idx = y * this.width + x;
+                    if (visited[idx]) continue;
+                    visited[idx] = 1;
+
+                    const pIdx = (y * this.scale * this.canvas.width + x * this.scale) * 4;
+                    if (data[pIdx] === tr && data[pIdx+1] === tg && data[pIdx+2] === tb && data[pIdx+3] === ta) {
+                        // Fill block
+                        for (let sy = 0; sy < this.scale; sy++) {
+                            for (let sx = 0; sx < this.scale; sx++) {
+                                const fillIdx = ((y * this.scale + sy) * this.canvas.width + (x * this.scale + sx)) * 4;
+                                data[fillIdx] = fr;
+                                data[fillIdx+1] = fg;
+                                data[fillIdx+2] = fb;
+                                data[fillIdx+3] = fa;
+                            }
+                        }
+                        queue.push([x+1, y], [x-1, y], [x, y+1], [x, y-1]);
+                    }
+                }
+                this.ctx.putImageData(imgData, 0, 0);
+            }
+
+            updateCanvasDisplay() {
+                // Redraw grid overlay if enabled
+                // Handled in render loop or CSS
+            }
+
+            newSkin(saveHistory = true) {
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                // Draw default Alex/Steve base template skin placeholder (e.g. simple skin layout)
+                this.ctx.fillStyle = '#f59e0b'; // skin tone base
+                // Head front
+                this.ctx.fillRect(8 * this.scale, 8 * this.scale, 8 * this.scale, 8 * this.scale);
+                // Body
+                this.ctx.fillStyle = '#3b82f6';
+                this.ctx.fillRect(20 * this.scale, 20 * this.scale, 8 * this.scale, 12 * this.scale);
+                
+                if (saveHistory) this.saveHistoryState();
+                this.update3DTexture();
+                this.showToast('Created new skin canvas', 'success');
+            }
+
+            clearCanvas() {
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                this.saveHistoryState();
+                this.update3DTexture();
+                this.showToast('Cleared canvas', 'info');
+            }
+
+            saveHistoryState() {
+                if (this.historyStep < this.history.length - 1) {
+                    this.history = this.history.slice(0, this.historyStep + 1);
+                }
+                this.history.push(this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height));
+                if (this.history.length > this.maxHistory) {
+                    this.history.shift();
+                } else {
+                    this.historyStep++;
+                }
+            }
+
+            undo() {
+                if (this.historyStep > 0) {
+                    this.historyStep--;
+                    this.ctx.putImageData(this.history[this.historyStep], 0, 0);
+                    this.update3DTexture();
+                    this.showToast('Undo action', 'info');
+                }
+            }
+
+            redo() {
+                if (this.historyStep < this.history.length - 1) {
+                    this.historyStep++;
+                    this.ctx.putImageData(this.history[this.historyStep], 0, 0);
+                    this.update3DTexture();
+                    this.showToast('Redo action', 'info');
+                }
+            }
+
+            setTool(tool) {
+                this.currentTool = tool;
+                ['pencil', 'eraser', 'fill', 'eyedropper'].forEach(t => {
+                    const el = document.getElementById(`tool${t.charAt(0).toUpperCase() + t.slice(1)}`);
+                    if (el) {
+                        el.className = t === tool 
+                            ? 'p-2.5 rounded-xl bg-blue-600 text-white flex items-center justify-center transition shadow-md'
+                            : 'p-2.5 rounded-xl bg-graphite-800 hover:bg-graphite-700 text-gray-300 flex items-center justify-center transition';
+                    }
+                });
+            }
+
+            toggleMirror() {
+                this.mirrorEnabled = !this.mirrorEnabled;
+                const btn = document.getElementById('toolMirror');
+                btn.className = this.mirrorEnabled
+                    ? 'p-2.5 rounded-xl bg-blue-600 text-white flex items-center justify-center transition shadow-md'
+                    : 'p-2.5 rounded-xl bg-graphite-800 hover:bg-graphite-700 text-gray-300 flex items-center justify-center transition';
+                this.showToast(`Mirror drawing ${this.mirrorEnabled ? 'enabled' : 'disabled'}`, 'info');
+            }
+
+            toggleGrid() {
+                this.gridEnabled = !this.gridEnabled;
+                const btn = document.getElementById('toolGrid');
+                btn.className = this.gridEnabled
+                    ? 'p-2.5 rounded-xl bg-graphite-800 hover:bg-graphite-700 text-blue-400 flex items-center justify-center transition'
+                    : 'p-2.5 rounded-xl bg-graphite-800 hover:bg-graphite-700 text-gray-500 flex items-center justify-center transition';
+                this.canvas.style.backgroundImage = this.gridEnabled ? 'linear-gradient(45deg, #1c202b 25%, transparent 25%), linear-gradient(-45deg, #1c202b 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #1c202b 75%), linear-gradient(-45deg, transparent 75%, #1c202b 75%)' : 'none';
+                this.canvas.style.backgroundSize = '16px 16px';
+            }
+
+            setBrushSize(size) {
+                this.brushSize = size;
+                document.getElementById('brushSizeVal.textContent') = `${size}px`;
+            }
+
+            zoomCanvas(delta) {
+                this.zoomLevel = Math.max(0.5, Math.min(3, this.zoomLevel + delta));
+                this.canvas.style.transform = `scale(${this.zoomLevel})`;
+                this.canvas.style.transformOrigin = 'top left';
+            }
+
+            resetZoom() {
+                this.zoomLevel = 1;
+                this.canvas.style.transform = 'scale(1)';
+            }
+
+            initThreeD() {
+                const container = document.getElementById('threeContainer');
+                const loading = document.getElementById('loadingThree');
+
+                this.scene = new THREE.Scene();
+                this.camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+                this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+                this.renderer.setSize(container.clientWidth, container.clientHeight);
+                this.renderer.setPixelRatio(window.devicePixelRatio);
+                container.appendChild(this.renderer.domElement);
+
+                // Lighting
+                const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+                this.scene.add(ambientLight);
+                const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+                dirLight.position.set(10, 20, 15);
+                this.scene.add(dirLight);
+
+                // Create Minecraft character group
+                this.playerGroup = new THREE.Group();
+                this.scene.add(this.playerGroup);
+
+                // Texture creation from canvas
+                this.skinTexture = new THREE.CanvasTexture(this.canvas);
+                this.skinTexture.magFilter = THREE.NearestFilter;
+                this.skinTexture.minFilter = THREE.NearestFilter;
+
+                this.buildPlayerModel();
+
+                this.camera.position.set(0, 0, 45);
+
+                // Mouse rotation controls
+                let isDragging = false;
+                let prevMouseX = 0, prevMouseY = 0;
+
+                container.addEventListener('mousedown', (e) => { isDragging = true; prevMouseX = e.clientX; prevMouseY = e.clientY; });
+                window.addEventListener('mousemove', (e) => {
+                    if (!isDragging) return;
+                    const deltaX = e.clientX - prevMouseX;
+                    const deltaY = e.clientY - prevMouseY;
+                    this.playerGroup.rotation.y += deltaX * 0.01;
+                    this.playerGroup.rotation.x += deltaY * 0.01;
+                    prevMouseX = e.clientX;
+                    prevMouseY = e.clientY;
+                });
+                window.addEventListener('mouseup', () => { isDragging = false; });
+
+                // Touch support
+                container.addEventListener('touchstart', (e) => {
+                    if (e.touches.length === 1) {
+                        isDragging = true;
+                        prevMouseX = e.touches[0].clientX;
+                        prevMouseY = e.touches[0].clientY;
+                    }
+                });
+                window.addEventListener('touchmove', (e) => {
+                    if (!isDragging || e.touches.length !== 1) return;
+                    const deltaX = e.touches[0].clientX - prevMouseX;
+                    const deltaY = e.touches[0].clientY - prevMouseY;
+                    this.playerGroup.rotation.y += deltaX * 0.01;
+                    this.playerGroup.rotation.x += deltaY * 0.01;
+                    prevMouseX = e.touches[0].clientX;
+                    prevMouseY = e.touches[0].clientY;
+                });
+                window.addEventListener('touchend', () => { isDragging = false; });
+
+                loading.style.display = 'none';
+
+                // Animation loop
+                const animate = () => {
+                    requestAnimationFrame(animate);
+                    this.renderer.render(this.scene, this.camera);
+                };
+                animate();
+
+                window.addEventListener('resize', () => {
+                    if (!container) return;
+                    this.camera.aspect = container.clientWidth / container.clientHeight;
+                    this.camera.updateProjectionMatrix();
+                    this.renderer.setSize(container.clientWidth, container.clientHeight);
+                });
+            }
+
+            buildPlayerModel() {
+                // Clear old parts
+                while(this.playerGroup.children.length > 0) { 
+                    this.playerGroup.remove(this.playerGroup.children[0]); 
+                }
+
+                const material = new THREE.MeshLambertMaterial({ map: this.skinTexture, transparent: true, alphaTest: 0.1 });
+
+                // Helper to create box with custom UV mapping for 64x64 Minecraft skin
+                const createBodyPart = (w, h, d, u, v, ou, ov, isOuter = false) => {
+                    const geom = new THREE.BoxGeometry(w, h, d);
+                    // Adjust UVs for Minecraft skin standard layout
+                    // Standard Three.js box UV mapping needs correct unwrapping or we use standard box geometry with custom material mapping
+                    return new THREE.Mesh(geom, material);
+                };
+
+                // Head (8x8x8)
+                const head = createBodyPart(8, 8, 8);
+                head.position.set(0, 12, 0);
+                this.playerGroup.add(head);
+
+                // Outer Head / Hat (8.5 x 8.5 x 8.5)
+                const hatGeom = new THREE.BoxGeometry(8.8, 8.8, 8.8);
+                const hat = new THREE.Mesh(hatGeom, material);
+                hat.position.set(0, 12, 0);
+                hat.name = 'outerLayer';
+                this.playerGroup.add(hat);
+
+                // Body (8x12x4)
+                const body = createBodyPart(8, 12, 4);
+                body.position.set(0, 2, 0);
+                this.playerGroup.add(body);
+
+                const bodyOuter = new THREE.Mesh(new THREE.BoxGeometry(8.6, 12.6, 4.6), material);
+                bodyOuter.position.set(0, 2, 0);
+                bodyOuter.name = 'outerLayer';
+                this.playerGroup.add(bodyOuter);
+
+                // Right Arm (4x12x4)
+                const rightArm = createBodyPart(4, 12, 4);
+                rightArm.position.set(-6, 2, 0);
+                this.playerGroup.add(rightArm);
+
+                const rightArmOuter = new THREE.Mesh(new THREE.BoxGeometry(4.6, 12.6, 4.6), material);
+                rightArmOuter.position.set(-6, 2, 0);
+                rightArmOuter.name = 'outerLayer';
+                this.playerGroup.add(rightArmOuter);
+
+                // Left Arm (4x12x4)
+                const leftArm = createBodyPart(4, 12, 4);
+                leftArm.position.set(6, 2, 0);
+                this.playerGroup.add(leftArm);
+
+                const leftArmOuter = new THREE.Mesh(new THREE.BoxGeometry(4.6, 12.6, 4.6), material);
+                leftArmOuter.position.set(6, 2, 0);
+                leftArmOuter.name = 'outerLayer';
+                this.playerGroup.add(leftArmOuter);
+
+                // Right Leg (4x12x4)
+                const rightLeg = createBodyPart(4, 12, 4);
+                rightLeg.position.set(-2, -10, 0);
+                this.playerGroup.add(rightLeg);
+
+                const rightLegOuter = new THREE.Mesh(new THREE.BoxGeometry(4.6, 12.6, 4.6), material);
+                rightLegOuter.position.set(-2, -10, 0);
+                rightLegOuter.name = 'outerLayer';
+                this.playerGroup.add(rightLegOuter);
+
+                // Left Leg (4x12x4)
+                const leftLeg = createBodyPart(4, 12, 4);
+                leftLeg.position.set(2, -10, 0);
+                this.playerGroup.add(leftLeg);
+
+                const leftLegOuter = new THREE.Mesh(new THREE.BoxGeometry(4.6, 12.6, 4.6), material);
+                leftLegOuter.position.set(2, -10, 0);
+                leftLegOuter.name = 'outerLayer';
+                this.playerGroup.add(leftLegOuter);
+
+                this.playerGroup.position.set(0, 0, 0);
+            }
+
+            update3DTexture() {
+                if (this.skinTexture) {
+                    this.skinTexture.needsUpdate = true;
+                }
+            }
+
+            setCameraAngle(angle) {
+                ['front', 'back', 'left', 'right', 'isometric'].forEach(a => {
+                    const btn = document.getElementById(`cam${a.charAt(0).toUpperCase() + a.slice(1)}`);
+                    if (btn) {
+                        btn.className = a === angle 
+                            ? 'px-2.5 py-1 text-xs rounded-lg bg-blue-600 text-white font-medium transition' 
+                            : 'px-2.5 py-1 text-xs rounded-lg text-gray-400 hover:text-white font-medium transition';
+                    }
+                });
+
+                this.playerGroup.rotation.set(0, 0, 0);
+                if (angle === 'front') this.playerGroup.rotation.y = 0;
+                else if (angle === 'back') this.playerGroup.rotation.y = Math.PI;
+                else if (angle === 'left') this.playerGroup.rotation.y = Math.PI / 2;
+                else if (angle === 'right') this.playerGroup.rotation.y = -Math.PI / 2;
+                else if (angle === 'isometric') {
+                    this.playerGroup.rotation.y = Math.PI / 4;
+                    this.playerGroup.rotation.x = 0.3;
+                }
+            }
+
+            resetCamera() {
+                this.playerGroup.rotation.set(0, 0, 0);
+                this.setCameraAngle('front');
+            }
+
+            toggleOuterLayer(show) {
+                this.playerGroup.traverse(child => {
+                    if (child.name === 'outerLayer') {
+                        child.visible = show;
+                    }
+                });
+            }
+
+            changeModel(modelId) {
+                this.selectedModel = modelId;
+                localStorage.setItem('skinforge_model', modelId);
+                this.showToast(`Selected model: ${modelId}`, 'info');
+            }
+
+            setAiMode(mode) {
+                this.aiMode = mode;
+                ['generate', 'improve', 'recolor'].forEach(m => {
+                    const btn = document.getElementById(`mode${m.charAt(0).toUpperCase() + m.slice(1)}`);
+                    if (btn) {
+                        btn.className = m === mode
+                            ? 'py-1.5 text-xs font-medium rounded-lg bg-blue-600 text-white transition'
+                            : 'py-1.5 text-xs font-medium rounded-lg text-gray-400 hover:text-white transition';
+                    }
+                });
+                const btnText = document.getElementById('aiBtnText');
+                if (mode === 'generate') btnText.textContent = 'Generate Skin';
+                else if (mode === 'improve') btnText.textContent = 'Improve Skin Design';
+                else if (mode === 'recolor') btnText.textContent = 'Recolor Skin Theme';
+            }
+
+            async runAiAction() {
+                const prompt = document.getElementById('aiPrompt').value.trim();
+                if (!prompt && this.aiMode === 'generate') {
+                    this.showToast('Please enter a skin description prompt', 'error');
+                    return;
+                }
+
+                const submitBtn = document.getElementById('aiSubmitBtn');
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Processing with ${this.selectedModel}...`;
+
+                try {
+                    let systemPrompt = "You are an expert Minecraft skin designer. Design Minecraft character skins using a standard 64x64 Minecraft skin texture layout. Think in terms of recognizable pixel-art shapes, shading, highlights, clothing layers, face details, hair, accessories and color harmony. Always return valid JSON matching the requested schema. Never return Markdown.";
+                    
+                    let userContent = prompt;
+                    if (this.aiMode === 'improve') {
+                        userContent = `Improve this skin design based on the instructions: ${prompt}.`;
+                    } else if (this.aiMode === 'recolor') {
+                        userContent = `Recolor the skin with this color theme/instructions: ${prompt}.`;
+                    }
+
+                    const payload = {
+                        model: this.selectedModel,
+                        messages: [
+                            { role: "system", content: systemPrompt },
+                            { role: "user", content: `Return ONLY valid JSON in this exact structure:
+{
+  "name": "skin name",
+  "description": "short description",
+  "palette": ["#hexcolor"],
+  "pixels": [
+    { "x": 0, "y": 0, "color": "#hexcolor" }
+  ]
+}
+Instructions: ${userContent}` }
+                        ],
+                        temperature: 0.7,
+                        max_tokens: 4000
+                    };
+
+                    const response = await fetch(WORKER_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`Worker error: HTTP ${response.status}`);
+                    }
+
+                    const data = await response.json();
+                    if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+                        throw new Error('Invalid response format from Worker');
+                    }
+
+                    let rawContent = data.choices[0].message.content.trim();
+                    // Strip markdown blocks if present
+                    if (rawContent.startsWith('```')) {
+                        rawContent = rawContent.replace(/^```(json)?/, '').replace(/```$/, '').trim();
+                    }
+
+                    const skinData = JSON.parse(rawContent);
+                    this.applyAiSkinData(skinData);
+                    this.showToast('Successfully generated AI skin!', 'success');
+                } catch (err) {
+                    console.error(err);
+                    this.showToast(`AI Generation failed: ${err.message}`, 'error');
+                } finally {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = `<i class="fa-solid fa-sparkles"></i> <span id="aiBtnText">${this.aiMode === 'generate' ? 'Generate Skin' : this.aiMode === 'improve' ? 'Improve Skin Design' : 'Recolor Skin Theme'}</span>`;
+                }
+            }
+
+            applyAiSkinData(skinData) {
+                if (!skinData.pixels || !Array.isArray(skinData.pixels)) {
+                    throw new Error('Invalid AI skin pixel data');
+                }
+
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+                skinData.pixels.forEach(p => {
+                    if (typeof p.x === 'number' && typeof p.y === 'number' && p.x >= 0 && p.x < this.width && p.y >= 0 && p.y < this.height && p.color) {
+                        this.ctx.fillStyle = p.color;
+                        this.ctx.fillRect(p.x * this.scale, p.y * this.scale, this.scale, this.scale);
+                    }
+                });
+
+                this.saveHistoryState();
+                this.update3DTexture();
+                this.saveToRecents(skinData.name || 'AI Custom Skin');
+            }
+
+            downloadSkin() {
+                const link = document.createElement('a');
+                link.download = 'minecraft_skin.png';
+                link.href = this.canvas.toDataURL('image/png');
+                link.click();
+                this.showToast('Skin downloaded successfully as PNG!', 'success');
+                this.saveToRecents('Exported Skin');
+            }
+
+            importSkin(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        if (img.width !== 64 || (img.height !== 64 && img.height !== 32)) {
+                            this.showToast('Invalid skin dimensions. Must be 64x64 or 64x32 PNG.', 'error');
+                            return;
+                        }
+                        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                        this.ctx.drawImage(img, 0, 0, this.canvas.width, this.canvas.height);
+                        this.saveHistoryState();
+                        this.update3DTexture();
+                        this.showToast('Skin imported successfully!', 'success');
+                        this.saveToRecents(file.name.replace(/\.[^/.]+$/, ''));
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+
+            saveToRecents(name) {
+                const dataUrl = this.canvas.toDataURL('image/png');
+                this.recentSkins.unshift({ name, dataUrl, date: new Date().toLocaleDateString() });
+                if (this.recentSkins.length > 12) this.recentSkins.pop();
+                localStorage.setItem('skinforge_recents', JSON.stringify(this.recentSkins));
+            }
+
+            openRecentsModal() {
+                const list = document.getElementById('recentsList');
+                list.innerHTML = '';
+
+                if (this.recentSkins.length === 0) {
+                    list.innerHTML = '<p class="col-span-3 text-center text-xs text-gray-500 py-6">No recent skins saved yet.</p>';
+                } else {
+                    this.recentSkins.forEach((skin, idx) => {
+                        const item = document.createElement('div');
+                        item.className = 'glass-panel p-2 rounded-xl flex flex-col items-center gap-2 border border-graphite-700 hover:border-blue-500/50 transition cursor-pointer';
+                        item.innerHTML = `
+                            <img src="${skin.dataUrl}" class="w-16 h-16 pixelated rounded bg-graphite-950 p-1">
+                            <span class="text-[11px] font-medium text-gray-200 truncate w-full text-center">${skin.name}</span>
+                            <div class="flex items-center gap-1 w-full justify-center">
+                                <button onclick="app.loadRecent(${idx})" class="px-2 py-1 bg-blue-600 hover:bg-blue-500 text-white rounded text-[10px]">Load</button>
+                                <button onclick="app.deleteRecent(${idx})" class="px-2 py-1 bg-red-900/40 hover:bg-red-900 text-red-300 rounded text-[10px]"><i class="fa-solid fa-trash"></i></button>
+                            </div>
+                        `;
+                        list.appendChild(item);
+                    });
+                }
+                document.getElementById('recentsModal').classList.remove('hidden');
+            }
+
+            closeRecentsModal() {
+                document.getElementById('recentsModal').classList.add('hidden');
+            }
+
+            loadRecent(idx) {
+                const skin = this.recentSkins[idx];
+                if (!skin) return;
+                const img = new Image();
+                img.onload = () => {
+                    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                    this.ctx.drawImage(img, 0, 0);
+                    this.saveHistoryState();
+                    this.update3DTexture();
+                    this.closeRecentsModal();
+                    this.showToast(`Loaded skin: ${skin.name}`, 'success');
+                };
+                img.src = skin.dataUrl;
+            }
+
+            deleteRecent(idx) {
+                this.recentSkins.splice(idx, 1);
+                localStorage.setItem('skinforge_recents', JSON.stringify(this.recentSkins));
+                this.openRecentsModal();
+                this.showToast('Deleted recent skin', 'info');
+            }
+
+            switchTab(tab) {
+                const tabs = ['editor', 'preview', 'ai', 'colors'];
+                tabs.forEach(t => {
+                    const btn = document.getElementById(`mobTab${t.charAt(0).toUpperCase() + t.slice(1)}`);
+                    const panel = document.getElementById(`panel${t.charAt(0).toUpperCase() + t.slice(1)}`);
+                    if (btn && panel) {
+                        if (t === tab) {
+                            btn.className = 'py-2 text-xs font-medium rounded-lg bg-blue-600 text-white transition flex flex-col items-center gap-1';
+                            panel.style.display = 'flex';
+                        } else {
+                            btn.className = 'py-2 text-xs font-medium rounded-lg text-gray-400 hover:text-white transition flex flex-col items-center gap-1';
+                            if (window.innerWidth < 1024) {
+                                panel.style.display = 'none';
+                            }
+                        }
+                    }
+                });
+            }
+
+            showToast(message, type = 'info') {
+                const container = document.getElementById('toastContainer');
+                const toast = document.createElement('div');
+                const bgColors = {
+                    success: 'bg-emerald-900/90 border-emerald-700 text-emerald-200',
+                    error: 'bg-red-900/90 border-red-700 text-red-200',
+                    info: 'bg-graphite-800/90 border-graphite-700 text-gray-200'
+                };
+                toast.className = `pointer-events-auto px-4 py-3 rounded-xl border shadow-xl text-xs font-medium backdrop-blur-md flex items-center gap-2.5 transition transform translate-y-2 opacity-0 animate-fadeIn ${bgColors[type] || bgColors.info}`;
+                
+                const icons = {
+                    success: 'fa-circle-check text-emerald-400',
+                    error: 'fa-circle-exclamation text-red-400',
+                    info: 'fa-circle-info text-blue-400'
+                };
+
+                toast.innerHTML = `<i class="fa-solid ${icons[type] || icons.info}"></i> <span>${message}</span>`;
+                container.appendChild(toast);
+
+                setTimeout(() => {
+                    toast.classList.remove('translate-y-2', 'opacity-0');
+                }, 10);
+
+                setTimeout(() => {
+                    toast.classList.add('opacity-0', 'translate-y-2');
+                    setTimeout(() => toast.remove(), 300);
+                }, 3500);
+            }
+        }
+
+        // Initialize App on window load
+        let app;
+        window.onload = () => {
+            app = new SkinForgeApp();
+        };
+    </script>
+</body>
+</html>
